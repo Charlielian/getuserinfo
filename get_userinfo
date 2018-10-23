@@ -1,0 +1,123 @@
+# coding=utf-8
+import datetime
+import hashlib
+import requests
+import json, time
+
+
+def Md5Tf(data):
+	checkcode = hashlib.md5(data.encode("utf-8")).hexdigest()
+	# print(checkcode)
+	return checkcode
+
+
+def roleTchn(data):
+	r_list = data.split(",")
+	if len(r_list) > 0:
+		rd = len(r_list)
+	else:
+		rd = '空'
+	return rd
+
+
+def get_date():
+	t = datetime.datetime.now()
+	dt = t.strftime('%Y-%m-%d')
+	dtime = t.strftime('%Y%m%d%H%M%S')
+	return dt, dtime
+
+
+def userinfo(userid, url, date_format):
+	mode_name = 'rest'  # 'rest' #'模块名'
+	Controller_name = 'user'  # '控制器名'
+	Method_name = 'getUserInfo'  # '方法名'
+	encryption_key = '12345678'
+	key = mode_name + Controller_name + Method_name + date_format + encryption_key
+
+	clientId = "cmcw"
+	apiToken = Md5Tf(key)
+	loginId = userid
+
+	# print(checkcode)
+	values = {
+		"clientId": clientId,
+		"apiToken": apiToken,
+		"loginId": loginId}
+
+	encode_json = json.dumps(values)
+	# print(encode_json,type(encode_json))
+
+	response = requests.post(url, encode_json)
+	rd = response.text
+	return rd
+
+
+def role_to(role, dict):
+	if role in dict.keys():
+		role_chn = dict[role]
+	else:
+		role_chn = ""
+
+	return role_chn
+
+
+def roleTchn(data, dict):
+	tranforstr = []
+	if isinstance(data, list):
+		tranforstr = []
+		for item in data:
+			tranforstr.append([item, role_to(item, dict)])
+		return tranforstr
+	else:
+
+		tranforstr.append([data, role_to(data, dict)])
+		return tranforstr
+
+
+if __name__ == '__main__':
+	url = "https://nqi.gmcc.net:20443/pro-portal/rest/user/getUserInfo"
+	while True:
+		date_format, dt = get_date()
+		user_id = str(input('请输入用户id:'))
+		# print(type(user_id))
+		# """print(user_id,type(user_id))
+		# user_id = 'nkheyuan'
+		if user_id == 'q' or user_id == 'Q':
+			print("退出！！！")
+			exit()
+		else:
+			# """
+			rr = userinfo(user_id, url, date_format)
+			record_dict = eval(rr)
+			print(record_dict, type(record_dict))
+			if 'userInfo' in record_dict.keys():
+				print("用户名:", record_dict['userInfo']['userName'], "用户ID:",
+					  record_dict['userInfo']['loginId'])
+
+				# print("角色:", record_dict['userInfo']['roleId'])
+				data = record_dict['userInfo']['roleId']
+				rd = roleTchn(data)
+				if rd == '空':
+					print("角色列表为空")
+				else:
+					pass
+				# print(data)
+
+				###########mt内容#############
+				if 'mt' not in record_dict['userInfo'].keys():
+					mT = '无mt消息'
+					mT_city = '无mt消息'
+					mT_role = '无mt消息'
+				else:
+					mT = record_dict['userInfo']['mt']
+					mT_city = record_dict['userInfo']['mt'][0]['cityName']
+					mT_role = record_dict['userInfo']['mt'][0]['roleId']
+				# print(mT)
+
+				print("组织名称:", record_dict['userInfo']['orgName'], "归属地市:",
+					  mT_city)
+				print("角色:", record_dict['userInfo']['roleId'], "mt权限", mT_role)
+			else:
+				print("该用户id查询不到信息，请核实后再查询！！")
+
+	# time.sleep(10)
